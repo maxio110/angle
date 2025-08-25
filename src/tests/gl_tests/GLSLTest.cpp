@@ -21468,6 +21468,44 @@ void main() {
 
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
 }
+
+TEST_P(GLSLTest, PreciseMatrixOperationComplexTest)
+{
+// Complex shader with multiple matrix operations and precise contexts
+constexpr char kVS[] = R"(#version 320 es
+void main()
+{
+    vec3 _333 = vec3(3);
+    vec4 _334 = vec4(mix(vec3(0.0), vec3(3) * (mat3(_333, _333, _333) * _333)[2], vec3(5)), 1.0);
+    precise vec4 _335 = _334;
+    _334.w = _335.w;
+}
+)";
+
+    GLuint shader = glCreateShader(GL_VERTEX_SHADER);
+    const char* shaderSource = kVS;
+    glShaderSource(shader, 1, &shaderSource, nullptr);
+    glCompileShader(shader);
+
+    // Check compilation status
+    GLint compileStatus = 0;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+
+    if (compileStatus == GL_FALSE)
+    {
+    GLint infoLogLength = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+    std::string infoLog(infoLogLength, ' ');
+    glGetShaderInfoLog(shader, infoLogLength, nullptr, &infoLog[0]);
+
+    // Log but don't fail - testing for asserts, not compilation errors
+    printf("Complex shader compilation failed (may not support version 320 es): %s\n", infoLog.c_str());
+    EXPECT_TRUE(false);
+    }
+    glDeleteShader(shader);
+}
+
 }  // anonymous namespace
 
 ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(
