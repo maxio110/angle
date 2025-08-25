@@ -1,0 +1,2 @@
+onError: commandError=true message=INSTRUMENTATION_FAILED: com.android.angle.test/androidx.test.runner.AndroidJUnitRunner
+INSTRUMENTATION_STATUS: Error=Unable to find instrumentation info for: ComponentInfo{com.android.angle.test/androidx.test.runner.AndroidJUnitRunner}

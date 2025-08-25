@@ -1,0 +1,106 @@
+# ANGLE Common Library CMakeLists.txt
+
+set(ANGLE_COMMON_SOURCES
+    BinaryStream.h
+    CircularBuffer.h
+    Color.h
+    Color.inc
+    CompiledShaderState.cpp
+    CompiledShaderState.h
+    FastVector.h
+    FixedQueue.h
+    FixedVector.h
+    Float16ToFloat32.cpp
+    MemoryBuffer.cpp
+    MemoryBuffer.h
+    Optional.h
+    PackedCLEnums_autogen.cpp
+    PackedCLEnums_autogen.h
+    PackedEGLEnums_autogen.cpp
+    PackedEGLEnums_autogen.h
+    PackedEnums.cpp
+    PackedEnums.h
+    PackedGLEnums_autogen.cpp
+    PackedGLEnums_autogen.h
+    PoolAlloc.cpp
+    PoolAlloc.h
+    SimpleMutex.cpp
+    SimpleMutex.h
+    SynchronizedValue.h
+    WorkerThread.cpp
+    WorkerThread.h
+    aligned_memory.cpp
+    aligned_memory.h
+    android_util.cpp
+    android_util.h
+    angle_version.h
+    angle_version_info.cpp
+    angle_version_info.h
+    angleutils.cpp
+    angleutils.h
+    apple_platform_utils.h
+    apple_platform_utils.mm
+    backtrace_utils.h
+    backtrace_utils_android.cpp
+    backtrace_utils_noop.cpp
+    bitset_utils.h
+    debug.cpp
+    debug.h
+    entry_points_enum_autogen.cpp
+    entry_points_enum_autogen.h
+    event_tracer.cpp
+    event_tracer.h
+    frame_capture_binary_data.cpp
+    frame_capture_binary_data.h
+    frame_capture_utils.cpp
+    frame_capture_utils.h
+    frame_capture_utils_autogen.cpp
+    frame_capture_utils_autogen.h
+    gl_enum_utils.cpp
+    gl_enum_utils.h
+    gl_enum_utils_autogen.cpp
+    gl_enum_utils_autogen.h
+    hash_containers.h
+    hash_utils.h
+    log_utils.h
+    mathutil.cpp
+    mathutil.h
+    matrix_utils.cpp
+    matrix_utils.h
+    platform.h
+    platform_helpers.cpp
+    platform_helpers.h
+    span.h
+    string_utils.cpp
+    string_utils.h
+    system_utils.cpp
+    system_utils.h
+    system_utils_apple.cpp
+    system_utils_ios.cpp
+    system_utils_ios.mm
+    system_utils_linux.cpp
+    system_utils_mac.cpp
+    system_utils_posix.cpp
+    system_utils_win.cpp
+    system_utils_win32.cpp
+    system_utils_winuwp.cpp
+    tls.cpp
+    tls.h
+    uniform_type_info_autogen.cpp
+    uniform_type_info_autogen.h
+    utilities.cpp
+    utilities.h
+    vector_utils.h
+)
+
+add_library(angle_common EXCLUDE_FROM_ALL ${ANGLE_COMMON_SOURCES})
+
+target_include_directories(angle_common PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/common/base
+    ${CMAKE_SOURCE_DIR}/src/common/third_party/xxhash
+    ${CMAKE_SOURCE_DIR}/third_party/abseil-cpp
+)
+
+target_compile_features(angle_common PUBLIC cxx_std_20)

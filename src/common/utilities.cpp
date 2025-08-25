@@ -1458,7 +1458,9 @@ void writeFile(const char *path, std::string_view content)
     FILE *file = fopen(path, "w");
     if (!file)
     {
-        UNREACHABLE();
+        std::stringstream ss;
+        ss << "Failed to open file at path: " << path << ". Reason: " << strerror(errno);
+        UNREACHABLE_ARG(ss.str());
         return;
     }
 

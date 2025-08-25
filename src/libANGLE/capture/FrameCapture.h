@@ -1217,6 +1217,10 @@ void CaptureEGLCallToFrameCapture(CaptureFuncT captureFunc,
 
     angle::FrameCaptureShared *frameCaptureShared =
         context->getShareGroup()->getFrameCaptureShared();
+
+    // Ensure FrameCaptureShared access thread safety by using a frame-capture only mutex.
+    std::lock_guard<angle::SimpleMutex> lock2(frameCaptureShared->getFrameCaptureMutex());
+
     if (!frameCaptureShared->isCapturing())
     {
         return;

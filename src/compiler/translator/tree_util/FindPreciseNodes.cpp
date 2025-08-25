@@ -103,7 +103,10 @@ const TVariable *AccessChain::build(TIntermTyped *lvalue)
     ASSERT(binary);
 
     TOperator op = binary->getOp();
-    ASSERT(IsIndexOp(op));
+    if (!IsIndexOp(op)) {
+      WARN() << "xwxw AccessChain::build not index op " << op;
+    }
+//    ASSERT(IsIndexOp(op));
 
     const TVariable *var = build(binary->getLeft());
 
@@ -167,7 +170,11 @@ void TraverseIndexNodesOnly(TIntermNode *node, Traverser *traverser)
     ASSERT(binary);
 
     TOperator op = binary->getOp();
-    ASSERT(IsIndexOp(op));
+    if (!IsIndexOp(op)) {
+          WARN() << "xwxw TraverseIndexNodesOnly not index op " << op;
+    }
+
+//    ASSERT(IsIndexOp(op));
 
     if (op == EOpIndexIndirect)
     {

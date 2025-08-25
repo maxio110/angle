@@ -1,0 +1,122 @@
+# ANGLE Translator CMakeLists.txt
+
+set(TRANSLATOR_SOURCES
+    AsNode.h
+    BaseTypes.cpp
+    BaseTypes.h
+    BuiltInFunctionEmulator.cpp
+    BuiltInFunctionEmulator.h
+    CallDAG.cpp
+    CallDAG.h
+    CodeGen.cpp
+    CollectVariables.cpp
+    CollectVariables.h
+    Common.h
+    Compiler.cpp
+    Compiler.h
+    ConstantUnion.cpp
+    ConstantUnion.h
+    Declarator.cpp
+    Declarator.h
+    Diagnostics.cpp
+    Diagnostics.h
+    DirectiveHandler.cpp
+    DirectiveHandler.h
+    ExtensionBehavior.cpp
+    ExtensionBehavior.h
+    FlagStd140Structs.cpp
+    FlagStd140Structs.h
+    FunctionLookup.cpp
+    FunctionLookup.h
+    HashNames.cpp
+    HashNames.h
+    ImmutableString.h
+    ImmutableStringBuilder.cpp
+    ImmutableStringBuilder.h
+    ImmutableString_autogen.cpp
+    InfoSink.cpp
+    InfoSink.h
+    Initialize.cpp
+    Initialize.h
+    InitializeDll.cpp
+    InitializeDll.h
+    InitializeGlobals.h
+    IntermNode.cpp
+    IntermNode.h
+    IntermRebuild.cpp
+    IntermRebuild.h
+    IsASTDepthBelowLimit.cpp
+    IsASTDepthBelowLimit.h
+    Name.cpp
+    Name.h
+    NodeType.h
+    Operator.cpp
+    Operator_autogen.h
+    OutputTree.cpp
+    OutputTree.h
+    ParseContext.cpp
+    ParseContext.h
+    PoolAlloc.cpp
+    PoolAlloc.h
+    Pragma.h
+    QualifierTypes.cpp
+    QualifierTypes.h
+    Severity.h
+    ShaderLang.cpp
+    ShaderVars.cpp
+    StaticType.h
+    Symbol.cpp
+    Symbol.h
+    SymbolTable.cpp
+    SymbolTable.h
+    SymbolTable_autogen.cpp
+    SymbolTable_autogen.h
+    SymbolUniqueId.cpp
+    SymbolUniqueId.h
+    Types.cpp
+    Types.h
+    ValidateAST.cpp
+    ValidateAST.h
+    ValidateBarrierFunctionCall.cpp
+    ValidateBarrierFunctionCall.h
+    ValidateClipCullDistance.cpp
+    ValidateClipCullDistance.h
+    ValidateGlobalInitializer.cpp
+    ValidateGlobalInitializer.h
+    ValidateLimitations.cpp
+    ValidateLimitations.h
+    ValidateMaxParameters.cpp
+    ValidateMaxParameters.h
+    ValidateOutputs.cpp
+    ValidateOutputs.h
+    ValidateSwitch.cpp
+    ValidateSwitch.h
+    ValidateTypeSizeLimitations.cpp
+    ValidateTypeSizeLimitations.h
+    ValidateVaryingLocations.cpp
+    ValidateVaryingLocations.h
+    VariablePacker.cpp
+    VariablePacker.h
+    blocklayout.cpp
+    blocklayout.h
+    glslang.h
+    glslang_lex_autogen.cpp
+    glslang_tab_autogen.cpp
+    glslang_tab_autogen.h
+    length_limits.h
+    util.cpp
+    util.h
+)
+
+add_library(angle_translator EXCLUDE_FROM_ALL ${TRANSLATOR_SOURCES})
+
+target_include_directories(angle_translator PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/common/base
+    ${CMAKE_SOURCE_DIR}/src/common/third_party/xxhash
+    ${CMAKE_SOURCE_DIR}/third_party/abseil-cpp
+)
+
+target_compile_features(angle_translator PUBLIC cxx_std_20)
+target_link_libraries(angle_translator angle_preprocessor angle_common)

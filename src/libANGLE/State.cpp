@@ -2743,7 +2743,43 @@ void State::detachTexture(Context *context, const TextureMap &zeroTextures, Text
             {
                 // Zero textures are the "default" textures instead of NULL
                 Texture *zeroTexture = zeroTextures[type].get();
-                ASSERT(zeroTexture != nullptr);
+                if (zeroTexture == nullptr) {
+                    continue;
+                }
+  /**
+   * =u:object_r:mnt_user_file:s0 tclass=dir permissive=0 app=com.epicgames.fortnite
+07-31 17:35:08.345 15269 15269 W audit   : audit_lost=197013 audit_rate_limit=5 audit_backlog_limit=64
+07-31 17:35:08.345 15269 15269 E audit   : rate limit exceeded
+07-31 17:35:08.467   505   505 I logd    : logdr: UID=10340 GID=10340 PID=15269 n tail=500 logMask=8 pid=14988 start=0ns deadline=0ns
+07-31 17:35:08.486   505   505 I logd    : logdr: UID=10340 GID=10340 PID=15269 n tail=500 logMask=1 pid=14988 start=0ns deadline=0ns
+07-31 17:35:08.522 15269 15269 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+07-31 17:35:08.522 15269 15269 F DEBUG   : Build fingerprint: 'google/frankel/frankel:16/BD1A.250527.003.G1/13795424:userdebug/dev-keys'
+07-31 17:35:08.522 15269 15269 F DEBUG   : Revision: 'EVT1.1'
+07-31 17:35:08.522 15269 15269 F DEBUG   : ABI: 'arm64'
+07-31 17:35:08.522 15269 15269 F DEBUG   : Timestamp: 2025-07-31 17:35:08.230499079-0700
+07-31 17:35:08.522 15269 15269 F DEBUG   : Process uptime: 26s
+07-31 17:35:08.523 15269 15269 F DEBUG   : Cmdline: com.epicgames.fortnite
+07-31 17:35:08.523 15269 15269 F DEBUG   : pid: 14988, tid: 15173, name: RHIThread  >>> com.epicgames.fortnite <<<
+07-31 17:35:08.523 15269 15269 F DEBUG   : uid: 10340
+07-31 17:35:08.523 15269 15269 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+07-31 17:35:08.523 15269 15269 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+07-31 17:35:08.523 15269 15269 F DEBUG   : signal 5 (SIGTRAP), code 1 (TRAP_BRKPT), fault addr 0x0000006dbd5442e0
+07-31 17:35:08.523 15269 15269 F DEBUG   : Abort message: 'FATAL: State.cpp:2712 (detachTexture):       ! Assert failed in detachTexture (../../src/libANGLE/State.cpp:2712): zeroTexture != nullptr'
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x0  0000000000000000  x1  b400007b67a3b590  x2  0000007b57a79450  x3  0000006da1af46b8
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x4  0000000000000080  x5  0000006da1af3cd5  x6  000000000000000a  x7  7f7f7f7f7f7f7f7f
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x8  0000000000000004  x9  0000000000005b44  x10 0000000000000090  x11 000000002376c30a
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x12 0000000000080007  x13 000000007fffffff  x14 0000000000000000  x15 0000063c1827a62a
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x16 0000000000000001  x17 0000007dd8c734e0  x18 000000000000005f  x19 0000006da1af48b8
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x20 b400007b67a3b590  x21 0000000000000004  x22 b400007cf7a1da20  x23 000000000000000a
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x24 00000000000005e0  x25 00000000000002f8  x26 000000000000002f  x27 0000000000000000
+07-31 17:35:08.523 15269 15269 F DEBUG   :     x28 b400007cf7a1a268  x29 0000006da1af4880
+07-31 17:35:08.523 15269 15269 F DEBUG   :     lr  0000006dbd544244  sp  0000006da1af4850  pc  0000006dbd5442e0  pst 0000000060001000
+07-31 17:35:08.523 15269 15269 F DEBUG   : 16 total frames
+07-31 17:35:08.524 15269 15269 F DEBUG   : backtrace:
+07-31 17:35:08.524 15269 15269 F DEBUG   :       #00 pc 0000000000eed2e0  /data/app/~~tLqvsrD0DdGwLsu2xNpnHg==/org.chromium.angle-OSfZdU9VoUvTc4U2ySJRrQ==/lib/arm64/libGLESv2_angle.so (gl::LogMessage::~LogMessage()+364) (BuildId: 2e1a885cded3007270c95636f5dd67bd09784182)
+
+   */
+//                ASSERT(zeroTexture != nullptr);
                 if (mCompleteTextureBindings[bindingIndex].getSubject() == binding.get())
                 {
                     updateTextureBinding(context, bindingIndex, zeroTexture);

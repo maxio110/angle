@@ -6534,6 +6534,7 @@ void FrameCaptureShared::updateCopyImageSubData(CallCapture &call)
 
     GLint srcName    = call.params.getParam("srcName", ParamType::TGLuint, 0).value.GLuintVal;
     GLenum srcTarget = call.params.getParam("srcTarget", ParamType::TGLenum, 1).value.GLenumVal;
+    INFO() << "xwxw updateCopyImageSubData srcTarget=" << srcTarget;
     switch (srcTarget)
     {
         case GL_RENDERBUFFER:
@@ -6548,6 +6549,7 @@ void FrameCaptureShared::updateCopyImageSubData(CallCapture &call)
         case GL_TEXTURE_2D_ARRAY:
         case GL_TEXTURE_3D:
         case GL_TEXTURE_CUBE_MAP:
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
         case GL_TEXTURE_EXTERNAL_OES:
         case GL_TEXTURE_2D_MULTISAMPLE:
         case GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES:
@@ -6558,8 +6560,9 @@ void FrameCaptureShared::updateCopyImageSubData(CallCapture &call)
             break;
         }
         default:
+            // this seems not getting logged
             ERR() << "Unhandled srcTarget = " << srcTarget;
-            UNREACHABLE();
+            UNREACHABLE(srcTarget);
             break;
     }
 
@@ -6580,6 +6583,7 @@ void FrameCaptureShared::updateCopyImageSubData(CallCapture &call)
         case GL_TEXTURE_2D_ARRAY:
         case GL_TEXTURE_3D:
         case GL_TEXTURE_CUBE_MAP:
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
         case GL_TEXTURE_EXTERNAL_OES:
         case GL_TEXTURE_2D_MULTISAMPLE:
         case GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES:
@@ -7093,6 +7097,28 @@ void FrameCaptureShared::maybeCapturePreCallUpdates(
         case EntryPoint::GLBindBufferRange:
             if (isCaptureActive())
             {
+                /**
+                 * 07-31 17:50:38.133 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.133 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.133 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.133 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.134 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.134 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.135 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W libEGL  : ANGLE Warn:FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+07-31 17:50:38.136 17345 17514 W ANGLE   : WARN: FrameCapture.cpp:7077 (maybeCapturePreCallUpdates): Indexed buffer binding changed during capture, Reset doesn't handle it yet.
+
+
+                 */
                 WARN() << "Indexed buffer binding changed during capture, Reset doesn't handle it "
                           "yet.";
             }

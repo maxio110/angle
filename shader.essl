@@ -1,0 +1,239 @@
+#version 320 es
+#define fma(A, B, C) ((A) * (B) + (C))
+
+#ifdef GL_ARB_shader_draw_parameters
+#define in_var_ATTRIBUTE10 in_ATTRIBUTE10
+#define in_var_ATTRIBUTE9 in_ATTRIBUTE9
+#define in_var_ATTRIBUTE5 in_ATTRIBUTE5
+#define in_var_ATTRIBUTE15 in_ATTRIBUTE15
+#define in_var_ATTRIBUTE4 in_ATTRIBUTE4
+#define in_var_ATTRIBUTE14 in_ATTRIBUTE14
+#define in_var_ATTRIBUTE3 in_ATTRIBUTE3
+#define in_var_ATTRIBUTE2 in_ATTRIBUTE2
+#define in_var_ATTRIBUTE1 in_ATTRIBUTE1
+#define in_var_ATTRIBUTE0 in_ATTRIBUTE0
+#extension GL_ARB_shader_draw_parameters : enable
+#endif
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+#define HLSLCC_DX11ClipSpace 1 
+
+
+invariant gl_Position;
+
+#define View_PreViewTranslationLow (vc0_h[13].xyz)
+#define View_PreViewTranslationHigh (vc0_h[12].xyz)
+#define View_FirstPersonTransform (mat4(vc0_h[8 + 0].xyzw,vc0_h[8 + 1].xyzw,vc0_h[8 + 2].xyzw,vc0_h[8 + 3].xyzw))
+#define View_ViewToTranslatedWorld (mat4(vc0_h[4 + 0].xyzw,vc0_h[4 + 1].xyzw,vc0_h[4 + 2].xyzw,vc0_h[4 + 3].xyzw))
+#define View_TranslatedWorldToClip (mat4(vc0_h[0 + 0].xyzw,vc0_h[0 + 1].xyzw,vc0_h[0 + 2].xyzw,vc0_h[0 + 3].xyzw))
+#define SPIRV_Cross_CombinedMaterial_Texture2D_2Material_Texture2D_2Sampler vs1
+uniform highp vec4 vc0_h[14];
+
+
+layout(std140) uniform vb3
+{
+    vec4 BatchedPrimitive_Datavb3[1024];
+};
+
+
+
+#define GPUSkinVFBase_Common_bIsMorphTarget (vc1_u[1].x)
+#define GPUSkinVFBase_Common_NumBoneInfluencesParam (vc1_u[0].x)
+uniform uvec4 vc1_u[2];
+
+
+#define Material_PreshaderBuffer_21 (vc2_h[7])
+#define Material_PreshaderBuffer_20 (vc2_h[6])
+#define Material_PreshaderBuffer_14 (vc2_h[5])
+#define Material_PreshaderBuffer_5 (vc2_h[4])
+#define Material_PreshaderBuffer_3 (vc2_h[3])
+#define Material_PreshaderBuffer_2 (vc2_h[2])
+#define Material_PreshaderBuffer_1 (vc2_h[1])
+#define Material_PreshaderBuffer_0 (vc2_h[0])
+uniform highp vec4 vc2_h[8];
+
+
+layout(binding = 0) uniform highp samplerBuffer vs0;
+uniform highp sampler2D SPIRV_Cross_CombinedMaterial_Texture2D_2Material_Texture2D_2Sampler;
+
+layout(location = 0) in vec4 in_var_ATTRIBUTE0;
+layout(location = 1) in vec3 in_var_ATTRIBUTE1;
+layout(location = 2) in vec4 in_var_ATTRIBUTE2;
+layout(location = 3) in uvec4 in_var_ATTRIBUTE3;
+layout(location = 14) in uvec4 in_var_ATTRIBUTE14;
+layout(location = 4) in vec4 in_var_ATTRIBUTE4;
+layout(location = 15) in vec4 in_var_ATTRIBUTE15;
+layout(location = 5) in vec2 in_var_ATTRIBUTE5;
+layout(location = 9) in vec3 in_var_ATTRIBUTE9;
+layout(location = 10) in vec3 in_var_ATTRIBUTE10;
+#ifdef GL_ARB_shader_draw_parameters
+#define SPIRV_Cross_BaseInstance gl_BaseInstanceARB
+#else
+uniform int SPIRV_Cross_BaseInstance;
+#endif
+layout(location = 0) out vec4 out_var_TEXCOORD10;
+layout(location = 1) out vec4 out_var_TEXCOORD11;
+layout(location = 4) flat out uint out_var_PRIMITIVE_ID;
+layout(location = 5) out vec4 out_var_TEXCOORD8;
+layout(location = 2) out vec4 out_var_TEXCOORD0_0_;
+layout(location = 3) out vec4 out_var_TEXCOORD0_1_;
+
+void main()
+{
+    uint _128 = uint((gl_InstanceID + SPIRV_Cross_BaseInstance)) * 32u;
+    mat4 _144 = transpose(mat4(BatchedPrimitive_Datavb3[_128 + 1u], BatchedPrimitive_Datavb3[_128 + 2u], BatchedPrimitive_Datavb3[_128 + 3u], vec4(0.0, 0.0, 0.0, 1.0)));
+    uint _165 = _128 + 4u;
+    bool _171 = GPUSkinVFBase_Common_NumBoneInfluencesParam > 4u;
+    ivec4 _172 = ivec4(in_var_ATTRIBUTE3);
+    ivec4 _176;
+    if (_171)
+    {
+        _176 = ivec4(in_var_ATTRIBUTE14);
+    }
+    else
+    {
+        _176 = ivec4(0);
+    }
+    vec4 _178 = mix(vec4(0.0), in_var_ATTRIBUTE15, bvec4(_171));
+    vec4 _181 = vec4(in_var_ATTRIBUTE4.x);
+    uint _184 = uint(_172.x) * 3u;
+    vec4 _191 = vec4(in_var_ATTRIBUTE4.y);
+    uint _194 = uint(_172.y) * 3u;
+    vec4 _207 = vec4(in_var_ATTRIBUTE4.z);
+    uint _210 = uint(_172.z) * 3u;
+    vec4 _220 = vec4(in_var_ATTRIBUTE4.w);
+    uint _223 = uint(_172.w) * 3u;
+    vec4 _229 = fma(_220, texelFetch(vs0, int(_223)), fma(_207, texelFetch(vs0, int(_210)), fma(_181, texelFetch(vs0, int(_184)), _191 * texelFetch(vs0, int(_194)))));
+    vec4 _230 = fma(_220, texelFetch(vs0, int(_223 + 1u)), fma(_207, texelFetch(vs0, int(_210 + 1u)), fma(_181, texelFetch(vs0, int(_184 + 1u)), _191 * texelFetch(vs0, int(_194 + 1u)))));
+    vec4 _231 = fma(_220, texelFetch(vs0, int(_223 + 2u)), fma(_207, texelFetch(vs0, int(_210 + 2u)), fma(_181, texelFetch(vs0, int(_184 + 2u)), _191 * texelFetch(vs0, int(_194 + 2u)))));
+    mat3x4 _288;
+    if (_171)
+    {
+        vec4 _236 = vec4(_178.x);
+        uint _239 = uint(_176.x) * 3u;
+        vec4 _249 = vec4(_178.y);
+        uint _252 = uint(_176.y) * 3u;
+        vec4 _262 = vec4(_178.z);
+        uint _265 = uint(_176.z) * 3u;
+        vec4 _275 = vec4(_178.w);
+        uint _278 = uint(_176.w) * 3u;
+        _288 = mat3x4(fma(_275, texelFetch(vs0, int(_278)), fma(_262, texelFetch(vs0, int(_265)), fma(_249, texelFetch(vs0, int(_252)), fma(_236, texelFetch(vs0, int(_239)), _229)))), fma(_275, texelFetch(vs0, int(_278 + 1u)), fma(_262, texelFetch(vs0, int(_265 + 1u)), fma(_249, texelFetch(vs0, int(_252 + 1u)), fma(_236, texelFetch(vs0, int(_239 + 1u)), _230)))), fma(_275, texelFetch(vs0, int(_278 + 2u)), fma(_262, texelFetch(vs0, int(_265 + 2u)), fma(_249, texelFetch(vs0, int(_252 + 2u)), fma(_236, texelFetch(vs0, int(_239 + 2u)), _231)))));
+    }
+    else
+    {
+        _288 = mat3x4(_229, _230, _231);
+    }
+    bool _291 = GPUSkinVFBase_Common_bIsMorphTarget != 0u;
+    vec4 _303;
+    vec3 _304;
+    if (_291)
+    {
+        vec3 _296 = normalize(in_var_ATTRIBUTE2.xyz + in_var_ATTRIBUTE10);
+        vec3 _298 = _296.xyz;
+        _303 = vec4(_296.x, _296.y, _296.z, in_var_ATTRIBUTE2.w);
+        _304 = normalize(in_var_ATTRIBUTE1 - (_298 * dot(in_var_ATTRIBUTE1, _298)));
+    }
+    else
+    {
+        _303 = in_var_ATTRIBUTE2;
+        _304 = in_var_ATTRIBUTE1;
+    }
+    vec3 _310 = normalize(vec4(_304, 0.0) * _288);
+    vec3 _316 = normalize(vec4(_303.xyz, 0.0) * _288);
+    mat3 _321 = mat3(_310, normalize(cross(_316, _310) * _303.w), _316);
+    vec3 _326;
+    if (_291)
+    {
+        _326 = in_var_ATTRIBUTE0.xyz + in_var_ATTRIBUTE9;
+    }
+    else
+    {
+        _326 = in_var_ATTRIBUTE0.xyz;
+    }
+    vec3 _331 = vec4(_326, 1.0) * _288;
+    vec3 _333 = vec4(_144[0].xyz, 0.0).xyz;
+    vec3 _335 = vec4(_144[1].xyz, 0.0).xyz;
+    vec3 _337 = vec4(_144[2].xyz, 0.0).xyz;
+    precise vec3 _40 = BatchedPrimitive_Datavb3[_128].xyz - (-View_PreViewTranslationHigh);
+    precise vec3 _41 = vec3(0.0) - (-View_PreViewTranslationLow);
+    precise vec3 _42 = _40 + _41;
+    vec4 _347 = vec4(fma(_331.xxx, _333, fma(_331.yyy, _335, _331.zzz * _337)) + (_42 + vec4(_144[3].xyz, 1.0).xyz), 1.0);
+    vec3 _368 = mix(vec3(0.0), vec3(Material_PreshaderBuffer_20.x) * (mat3(_333, _335, _337) * _321)[2], vec3(dot(vec4(textureLod(SPIRV_Cross_CombinedMaterial_Texture2D_2Material_Texture2D_2Sampler, in_var_ATTRIBUTE5, -1.0).xyz, 0.0), Material_PreshaderBuffer_5)));
+    float _380 = abs(in_var_ATTRIBUTE0.x);
+    vec3 _418;
+    do
+    {
+        if (Material_PreshaderBuffer_21.x != 0.0)
+        {
+            _418 = _368 + mix(vec3(0.0), mat3(View_ViewToTranslatedWorld[0].xyz, View_ViewToTranslatedWorld[1].xyz, View_ViewToTranslatedWorld[2].xyz) * Material_PreshaderBuffer_20.yzw, vec3(clamp(clamp(fma(-_380, Material_PreshaderBuffer_1.z, 1.0) * Material_PreshaderBuffer_1.y, 0.0, 1.0) * clamp(clamp(fma(-abs(in_var_ATTRIBUTE0.z - Material_PreshaderBuffer_1.w), Material_PreshaderBuffer_2.x, 1.0) * Material_PreshaderBuffer_1.y, 0.0, 1.0) + floor(in_var_ATTRIBUTE0.z * Material_PreshaderBuffer_0.x), 0.0, 1.0), 0.0, 1.0)));
+            break;
+        }
+        _418 = _368;
+        break;
+    } while(false);
+    vec3 _421 = (_347.xyz + _418).xyz;
+    vec3 _472;
+    SPIRV_CROSS_BRANCH
+    if ((floatBitsToUint(BatchedPrimitive_Datavb3[_128].w) & 1073741824u) != 0u)
+    {
+        float _429 = clamp(in_var_ATTRIBUTE0.z * Material_PreshaderBuffer_2.y, 0.0, 1.0);
+        float _449;
+        do
+        {
+            if ((_380 < mix(Material_PreshaderBuffer_2.z, Material_PreshaderBuffer_2.w, _429)) && (abs(in_var_ATTRIBUTE0.y) < mix(Material_PreshaderBuffer_3.x, Material_PreshaderBuffer_3.y, _429)))
+            {
+                _449 = _429;
+                break;
+            }
+            _449 = 1.0;
+            break;
+        } while(false);
+        float _457;
+        do
+        {
+            if (Material_PreshaderBuffer_21.y != 0.0)
+            {
+                _457 = _449;
+                break;
+            }
+            _457 = 1.0;
+            break;
+        } while(false);
+        _472 = mix(_421, mat3(View_FirstPersonTransform[0].xyz, View_FirstPersonTransform[1].xyz, View_FirstPersonTransform[2].xyz) * _421, vec3(clamp(mix(_457, 1.0, Material_PreshaderBuffer_14.w), 0.0, 1.0)));
+    }
+    else
+    {
+        _472 = _421;
+    }
+    vec4 _473 = vec4(_472.x, _472.y, _472.z, _347.w);
+    precise vec4 _37 = View_TranslatedWorldToClip * _473;
+    vec2 _475 = vec2(in_var_ATTRIBUTE0.xy);
+    vec2 _476 = vec2(0.0);
+    _476.x = in_var_ATTRIBUTE0.z;
+    mat3 _486 = mat3(_333 * BatchedPrimitive_Datavb3[_165].x, _335 * BatchedPrimitive_Datavb3[_165].y, _337 * BatchedPrimitive_Datavb3[_165].z) * _321;
+    vec3 _487 = _486[0];
+    out_var_TEXCOORD0_1_ = vec4(_476.x, _476.y, vec4(0.0).z, vec4(0.0).w);
+    out_var_TEXCOORD0_0_ = vec4(in_var_ATTRIBUTE5.x, in_var_ATTRIBUTE5.y, _475.x, _475.y);
+    _473.w = _37.w;
+    out_var_TEXCOORD10 = vec4(_487.x, _487.y, _487.z, vec4(0.0).w);
+    out_var_TEXCOORD11 = vec4(_486[2], in_var_ATTRIBUTE2.w);
+    out_var_PRIMITIVE_ID = uint((gl_InstanceID + SPIRV_Cross_BaseInstance));
+    out_var_TEXCOORD8 = _473;
+    gl_Position = _37;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
+}
+
+
+

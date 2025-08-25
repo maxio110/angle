@@ -285,11 +285,11 @@ std::ostream &FmtHex(std::ostream &os, T value)
         } while (0)
 
 // A macro for code which is not expected to be reached under valid assumptions
-#    define UNREACHABLE()                                                                    \
+#    define UNREACHABLE(...)                                                                    \
         do                                                                                   \
         {                                                                                    \
             FATAL() << "\t! Unreachable reached: " << __FUNCTION__ << "(" << __FILE__ << ":" \
-                    << __LINE__ << ")";                                                      \
+                    << __LINE__ << ")" << " Extra: " << #__VA_ARGS__;                                                  \
         } while (0)
 #else
 #    define UNIMPLEMENTED()                 \
@@ -305,6 +305,13 @@ std::ostream &FmtHex(std::ostream &os, T value)
             ASSERT(false); \
         } while (0)
 #endif  // defined(ANGLE_TRACE_ENABLED) || defined(ANGLE_ENABLE_ASSERTS)
+
+#    define UNREACHABLE_ARG(...)                                                                    \
+do                                                                                   \
+{                                                                                    \
+    FATAL() << "\t! Unreachable reached: " << __FUNCTION__ << "(" << __FILE__ << ":" \
+            << __LINE__ << ")" << " Extra: " << __VA_ARGS__;                                                  \
+} while (0)
 
 #if defined(ANGLE_PLATFORM_WINDOWS)
 #    define ANGLE_FUNCTION __FUNCTION__
