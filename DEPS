@@ -200,6 +200,7 @@ vars = {
   'checkout_angle_restricted_trace_callbreak': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_candy_crush_500': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_candy_crush_soda_saga': 'checkout_angle_restricted_traces',
+  'checkout_angle_restricted_trace_candycrushsaga': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_car_chase': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_car_parking_multiplayer': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_car_race_3d': 'checkout_angle_restricted_traces',
@@ -262,6 +263,7 @@ vars = {
   'checkout_angle_restricted_trace_fishdom': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_five_nights_at_freddys': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_football_league_2025': 'checkout_angle_restricted_traces',
+  'checkout_angle_restricted_trace_fortnite': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_free_fire': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_free_fire_max': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_frost_and_flame': 'checkout_angle_restricted_traces',
@@ -1847,6 +1849,16 @@ deps = {
       'dep_type': 'cipd',
       'condition': 'checkout_angle_restricted_trace_candy_crush_soda_saga',
   },
+  'src/tests/restricted_traces/candycrushsaga': {
+      'packages': [
+        {
+            'package': 'angle/traces/candycrushsaga',
+            'version': 'version:1',
+        },
+      ],
+      'dep_type': 'cipd',
+      'condition': 'checkout_angle_restricted_trace_candycrushsaga',
+  },
   'src/tests/restricted_traces/car_chase': {
       'packages': [
         {
@@ -2466,6 +2478,16 @@ deps = {
       ],
       'dep_type': 'cipd',
       'condition': 'checkout_angle_restricted_trace_football_league_2025',
+  },
+  'src/tests/restricted_traces/fortnite': {
+      'packages': [
+        {
+            'package': 'angle/traces/fortnite',
+            'version': 'version:1',
+        },
+      ],
+      'dep_type': 'cipd',
+      'condition': 'checkout_angle_restricted_trace_fortnite',
   },
   'src/tests/restricted_traces/free_fire': {
       'packages': [

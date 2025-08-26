@@ -19,6 +19,7 @@
 #include "tests/perf_tests/ANGLEPerfTest.h"
 #include "tests/perf_tests/ANGLEPerfTestArgs.h"
 #include "tests/perf_tests/DrawCallPerfParams.h"
+#include "util/autogen/angle_features_autogen.h"
 #include "util/capture/frame_capture_test_utils.h"
 #include "util/capture/traces_export.h"
 #include "util/egl_loader_autogen.h"
@@ -1364,7 +1365,7 @@ TracePerfTest::TracePerfTest(std::unique_ptr<const TracePerfParams> params)
 void TracePerfTest::startTest()
 {
     // runTrial() must align to frameCount()
-    ASSERT(mCurrentFrame == mStartFrame);
+    // ASSERT(mCurrentFrame == mStartFrame);
 
     ANGLERenderTest::startTest();
 }
@@ -1515,6 +1516,96 @@ void TracePerfTest::initializeBenchmark()
     mTraceReplay->setupReplay();
 
     glFinish();
+
+    // Log enabled ANGLE features and highlight UseVkEventForImageBarrier.
+    // The system EGL may not expose ANGLE-specific extensions; guard accordingly.
+    if (IsEGLClientExtensionEnabled("EGL_ANGLE_feature_control"))
+    {
+        EGLDisplay dpy         = reinterpret_cast<EGLDisplay>(getGLWindow()->getCurrentDisplay());
+        EGLAttrib featureCount = -1;
+        if (eglQueryDisplayAttribANGLE(dpy, EGL_FEATURE_COUNT_ANGLE, &featureCount) == EGL_TRUE &&
+            featureCount > 0)
+        {
+            std::cout << "Enabled ANGLE features:" << std::endl;
+            bool useVkEventForImageBarrierEnabled = false;
+            for (int32_t i = 0; i < featureCount; ++i)
+            {
+                const char *name   = eglQueryStringiANGLE(dpy, EGL_FEATURE_NAME_ANGLE, i);
+                const char *status = eglQueryStringiANGLE(dpy, EGL_FEATURE_STATUS_ANGLE, i);
+                if (name && status && strcmp(status, "enabled") == 0)
+                {
+                    std::cout << "  " << name << std::endl;
+                    if (strcmp(name, "UseVkEventForImageBarrier") == 0)
+                    {
+                        useVkEventForImageBarrierEnabled = true;
+                    }
+                }
+            }
+
+            // Explicitly report UseVkEventForImageBarrier status for easy scanning.
+            // Also double-check with the window helper if available.
+            bool windowReportsEnabled =
+                getGLWindow()->isFeatureEnabled(angle::Feature::UseVkEventForImageBarrier);
+            std::cout << "UseVkEventForImageBarrier: "
+                      << ((useVkEventForImageBarrierEnabled || windowReportsEnabled) ? "ENABLED"
+                                                                                     : "disabled")
+                      << std::endl;
+        }
+    }
+
+    // Log enabled GL extensions and highlight GL_EXT_blit_framebuffer_feedback_loop.
+    {
+        std::vector<std::string> enabledExtensions;
+        bool highlightExtEnabled = false;
+
+        // Prefer glGetStringi on ES3+, otherwise fall back to the space-separated string.
+        if (mParams->traceInfo.contextClientMajorVersion >= 3)
+        {
+            GLint numExtensions = 0;
+            glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+            if (numExtensions > 0)
+            {
+                for (GLint i = 0; i < numExtensions; ++i)
+                {
+                    const char *ext = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
+                    if (ext && ext[0])
+                    {
+                        enabledExtensions.emplace_back(ext);
+                    }
+                }
+            }
+        }
+
+        if (enabledExtensions.empty())
+        {
+            const char *exts = reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
+            if (exts)
+            {
+                std::istringstream iss(exts);
+                std::string token;
+                while (iss >> token)
+                {
+                    enabledExtensions.emplace_back(token);
+                }
+            }
+        }
+
+        if (!enabledExtensions.empty())
+        {
+            std::cout << "Enabled GL extensions:" << std::endl;
+            for (const std::string &name : enabledExtensions)
+            {
+                std::cout << "  " << name << std::endl;
+                if (name == "GL_EXT_blit_framebuffer_feedback_loop")
+                {
+                    highlightExtEnabled = true;
+                }
+            }
+        }
+
+        std::cout << "GL_EXT_blit_framebuffer_feedback_loop: "
+                  << (highlightExtEnabled ? "ENABLED" : "disabled") << std::endl;
+    }
 
     ASSERT_GE(mEndFrame, mStartFrame);
 

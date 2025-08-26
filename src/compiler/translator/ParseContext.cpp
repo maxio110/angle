@@ -1933,7 +1933,7 @@ void TParseContext::parseParameterQualifier(const TSourceLoc &line,
         type.setPrecision(typeQualifier.precision);
     }
 
-    if (typeQualifier.precise)
+    if (getShaderType() != GL_VERTEX_SHADER && typeQualifier.precise)
     {
         type.setPrecise(true);
     }
@@ -3955,7 +3955,7 @@ TPublicType TParseContext::addFullySpecifiedType(const TTypeQualifierBuilder &ty
     TPublicType returnType     = typeSpecifier;
     returnType.qualifier       = typeQualifier.qualifier;
     returnType.invariant       = typeQualifier.invariant;
-    returnType.precise         = typeQualifier.precise;
+    returnType.precise         = (getShaderType() != GL_VERTEX_SHADER) && typeQualifier.precise;
     returnType.layoutQualifier = typeQualifier.layoutQualifier;
     returnType.memoryQualifier = typeQualifier.memoryQualifier;
     returnType.precision       = typeSpecifier.precision;
@@ -4724,7 +4724,7 @@ TIntermGlobalQualifierDeclaration *TParseContext::parseGlobalQualifierDeclaratio
         mIRBuilder.markVariablePrecise(id);
     }
 
-    return new TIntermGlobalQualifierDeclaration(intermSymbol, typeQualifier.precise,
+    return new TIntermGlobalQualifierDeclaration(intermSymbol, (getShaderType() != GL_VERTEX_SHADER) && typeQualifier.precise,
                                                  identifierLoc);
 }
 
@@ -7712,7 +7712,7 @@ TFieldList *TParseContext::addStructDeclaratorListWithQualifiers(
     typeSpecifier->layoutQualifier = typeQualifier.layoutQualifier;
     typeSpecifier->memoryQualifier = typeQualifier.memoryQualifier;
     typeSpecifier->invariant       = typeQualifier.invariant;
-    typeSpecifier->precise         = typeQualifier.precise;
+    typeSpecifier->precise         = (getShaderType() != GL_VERTEX_SHADER) && typeQualifier.precise;
     if (typeQualifier.precision != EbpUndefined)
     {
         typeSpecifier->precision = typeQualifier.precision;

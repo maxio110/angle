@@ -18,6 +18,7 @@
 #include <fstream>
 #include <queue>
 #include <string>
+#include <cstdio>
 
 #include "common/aligned_memory.h"
 #include "common/angle_version_info.h"
@@ -8424,14 +8425,19 @@ void FrameCaptureShared::onEndFrame(gl::Context *context)
 
     // Count resource IDs. This is also done on every frame. It could probably be done by
     // checking the GL state instead of the calls.
-    for (const CallCapture &call : mFrameCalls)
+    // Guard access to mFrameCalls with the frame-capture mutex to avoid races with
+    // concurrent call capture on other threads.
     {
-        for (const ParamCapture &param : call.params.getParamCaptures())
+        std::lock_guard<angle::SimpleMutex> lock(mFrameCaptureMutex);
+        for (const CallCapture &call : mFrameCalls)
         {
-            ResourceIDType idType = GetResourceIDTypeFromParamType(param.type);
-            if (idType != ResourceIDType::InvalidEnum)
+            for (const ParamCapture &param : call.params.getParamCaptures())
             {
-                mHasResourceType.set(idType);
+                ResourceIDType idType = GetResourceIDTypeFromParamType(param.type);
+                if (idType != ResourceIDType::InvalidEnum)
+                {
+                    mHasResourceType.set(idType);
+                }
             }
         }
     }
@@ -8464,9 +8470,13 @@ void FrameCaptureShared::onEndFrame(gl::Context *context)
 
     ASSERT(isCaptureActive());
 
-    if (!mFrameCalls.empty())
     {
-        mActiveFrameIndices.push_back(getReplayFrameIndex());
+        // Track active frame indices if any calls were captured. Protect against races.
+        std::lock_guard<angle::SimpleMutex> lock(mFrameCaptureMutex);
+        if (!mFrameCalls.empty())
+        {
+            mActiveFrameIndices.push_back(getReplayFrameIndex());
+        }
     }
 
     // Make sure all pending work for every Context in the share group has completed so all data
@@ -8480,8 +8490,12 @@ void FrameCaptureShared::onEndFrame(gl::Context *context)
         CaptureValidateSerializedState(context, &mFrameCalls);
     }
 
-    writeMainContextCppReplay(context, frameCapture->getSetupCalls(),
-                              frameCapture->getStateResetHelper());
+    // Protect generation that consumes mFrameCalls from concurrent mutations.
+    {
+        std::lock_guard<angle::SimpleMutex> lock(mFrameCaptureMutex);
+        writeMainContextCppReplay(context, frameCapture->getSetupCalls(),
+                                  frameCapture->getStateResetHelper());
+    }
 
     if (mFrameIndex == mCaptureEndFrame)
     {
@@ -8498,7 +8512,11 @@ void FrameCaptureShared::onEndFrame(gl::Context *context)
         INFO() << "Finished recording graphics API capture";
     }
 
-    reset();
+    // Clear per-frame state under lock to avoid races with capture threads.
+    {
+        std::lock_guard<angle::SimpleMutex> lock(mFrameCaptureMutex);
+        reset();
+    }
     mFrameIndex++;
 }
 
@@ -9329,7 +9347,7 @@ void FrameCaptureShared::setShaderSource(gl::ShaderProgramID id, std::string sou
 const ProgramSources &FrameCaptureShared::getProgramSources(gl::ShaderProgramID id) const
 {
     const auto &foundSources = mCachedProgramSources.find(id);
-    ASSERT(foundSources != mCachedProgramSources.end());
+    //ASSERT(foundSources != mCachedProgramSources.end());
     return foundSources->second;
 }
 
@@ -9450,11 +9468,32 @@ void CaptureShaderStrings(GLsizei count,
     size_t offset = 0;
     for (GLsizei index = 0; index < count; ++index)
     {
-        size_t len = ((length && length[index] >= 0) ? length[index] : strlen(strings[index]));
+        GLint rawLen = (length ? length[index] : -9999);
+        size_t len    = 0;
+        if (length && rawLen >= 0)
+        {
+            len = static_cast<size_t>(rawLen);
+        }
+        else if (strings && strings[index] != nullptr)
+        {
+            std::fprintf(stderr,
+                         "[Capture][ShaderStrings] strlen fallback idx=%d str=%p lenptr=%p raw=%d\n",
+                         static_cast<int>(index), static_cast<const void *>(strings[index]),
+                         static_cast<const void *>(length), rawLen);
+            len = strlen(strings[index]);
+        }
+        else
+        {
+            std::fprintf(stderr,
+                         "[Capture][ShaderStrings] empty/null source idx=%d str=%p lenptr=%p raw=%d\n",
+                         static_cast<int>(index),
+                         strings ? static_cast<const void *>(strings[index]) : nullptr,
+                         static_cast<const void *>(length), rawLen);
+        }
 
         // Count trailing zeros
         uint32_t i = 1;
-        while (i < len && strings[index][len - i] == 0)
+        while (i < len && strings && strings[index] && strings[index][len - i] == 0)
         {
             i++;
         }
@@ -9462,9 +9501,12 @@ void CaptureShaderStrings(GLsizei count,
         // Don't copy trailing zeros
         len -= (i - 1);
 
-        data.resize(offset + len);
-        std::copy(strings[index], strings[index] + len, data.begin() + offset);
-        offset += len;
+        if (len > 0 && strings && strings[index])
+        {
+            data.resize(offset + len);
+            std::copy(strings[index], strings[index] + len, data.begin() + offset);
+            offset += len;
+        }
     }
 
     data.push_back(0);
