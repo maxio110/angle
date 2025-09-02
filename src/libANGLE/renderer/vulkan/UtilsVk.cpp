@@ -4016,7 +4016,7 @@ angle::Result UtilsVk::transCodeEtcToBc(ContextVk *contextVk,
     bufferViewHelper.get().init(renderer, 0, texBufferSize);
     ANGLE_TRY(bufferViewHelper.get().getView(
         contextVk, *srcBuffer, copyRegion->bufferOffset,
-        renderer->getFormat(GetCompactibleUINTFormat(intendedFormat)), &srcBufferView));
+        renderer->getFormat(GetCompactibleUINTFormat(intendedFormat)), &srcBufferView, nullptr));
 
     vk::LevelIndex dstLevel =
         gl::LevelIndexWrapper<uint32_t>(copyRegion->imageSubresource.mipLevel);

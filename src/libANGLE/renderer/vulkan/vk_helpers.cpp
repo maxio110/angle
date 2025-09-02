@@ -10403,16 +10403,14 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
             stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk, gl::kOffsetZero,
                                             getLevelExtents(levelVk), mImageType);
         }
-        else if (textureType == gl::TextureType::CubeMap || textureType == gl::TextureType::CubeMapArray)
+        else if (textureType == gl::TextureType::CubeMap)
         {
-            uint32_t layerCount = textureType == gl::TextureType::CubeMap ? gl::kCubeFaceCount : mLayerCount;
-            for (uint32_t layer = 0; layer < layerCount; ++layer)
+            for (uint32_t face = 0; face < gl::kCubeFaceCount; ++face)
             {
-                uint32_t face = layer % gl::kCubeFaceCount;
                 if (!skipLevels[face][levelGL.get()])
                 {
                     const gl::ImageIndex index =
-                        gl::ImageIndex::Make2DArrayRange(levelGL.get(), layer, 1);
+                        gl::ImageIndex::Make2DArrayRange(levelGL.get(), face, 1);
 
                     stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk,
                                                     gl::kOffsetZero, getLevelExtents(levelVk),
@@ -12841,8 +12839,8 @@ angle::Result ImageViewHelper::initReadViewsImpl(ContextVk *contextVk,
     }
 
     gl::TextureType fetchType = viewType;
-    if (viewType == gl::TextureType::CubeMap || viewType == gl::TextureType::CubeMapArray ||
-        viewType == gl::TextureType::_2DArray || viewType == gl::TextureType::_2DMultisampleArray)
+    if (viewType == gl::TextureType::CubeMap || viewType == gl::TextureType::_2DArray ||
+        viewType == gl::TextureType::_2DMultisampleArray)
     {
         fetchType = Get2DTextureType(layerCount, image.getSamples());
     }
@@ -12939,8 +12937,8 @@ angle::Result ImageViewHelper::initLinearAndSrgbReadViewsImpl(ContextVk *context
 
     gl::TextureType fetchType = viewType;
 
-    if (viewType == gl::TextureType::CubeMap || viewType == gl::TextureType::CubeMapArray ||
-        viewType == gl::TextureType::_2DArray || viewType == gl::TextureType::_2DMultisampleArray)
+    if (viewType == gl::TextureType::CubeMap || viewType == gl::TextureType::_2DArray ||
+        viewType == gl::TextureType::_2DMultisampleArray)
     {
         fetchType = Get2DTextureType(layerCount, image.getSamples());
     }
@@ -13437,12 +13435,17 @@ angle::Result BufferViewHelper::getView(ErrorContext *context,
                                         const BufferHelper &buffer,
                                         VkDeviceSize bufferOffset,
                                         const Format &format,
-                                        const BufferView **viewOut)
+                                        const BufferView **viewOut,
+                                        VkFormat *viewVkFormatOut)
 {
     ASSERT(format.valid());
 
     vk::Renderer *renderer = context->getRenderer();
     VkFormat viewVkFormat  = format.getActualBufferVkFormat(renderer, false);
+    if (viewVkFormatOut != nullptr)
+    {
+        *viewVkFormatOut = viewVkFormat;
+    }
 
     auto iter = mViews.find(viewVkFormat);
     if (iter != mViews.end())

@@ -3974,7 +3974,8 @@ angle::Result TextureVk::getBufferView(vk::ErrorContext *context,
                                        const vk::Format *imageUniformFormat,
                                        const gl::SamplerBinding *samplerBinding,
                                        bool isImage,
-                                       const vk::BufferView **viewOut)
+                                       const vk::BufferView **viewOut,
+                                       VkFormat *viewVkFormatOut)
 {
     vk::Renderer *renderer = context->getRenderer();
 
@@ -4008,8 +4009,8 @@ angle::Result TextureVk::getBufferView(vk::ErrorContext *context,
     }
 
     // Create a view for the required format.
-    return mBufferViews.getView(context, *buffer, buffer->getOffset(), *imageUniformFormat,
-                                viewOut);
+    return mBufferViews.getView(context, *buffer, buffer->getOffset(), *imageUniformFormat, viewOut,
+                                viewVkFormatOut);
 }
 
 angle::Result TextureVk::initImage(ContextVk *contextVk,

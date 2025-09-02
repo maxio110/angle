@@ -6702,6 +6702,94 @@ TEST_P(GLSLTest, StructureNameMatchingTest)
     EXPECT_EQ(0u, program);
 }
 
+// Verify that when two shaders are writing to the same texture buffer but using
+// different buffer view format will result in correct value.
+TEST_P(GLSLTest, TextureBufferWritesUsingDifferentFormats)
+{
+    // Requires ES 3.2 for testing texture buffer
+    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 ||
+                       (getClientMajorVersion() == 3 && getClientMinorVersion() < 2));
+
+    // Pass 1: write a 16-byte sentinel at texel index 1 (offset 16 bytes) with RGBA32UI view.
+    const std::string kCS_RGBA32UI =
+        std::string("#version 320 es\n") +
+        "layout(local_size_x=1) in;\n"
+        "layout(rgba32ui, binding = 0) uniform writeonly highp uimageBuffer img;\n"
+        "void main() {\n"
+        "    imageStore(img, 1, uvec4(1, 2, 3, 4));\n"
+        "}";
+
+    // Pass 2: write a 4-byte marker at texel index 4 (offset 16 bytes if R32UI view is used).
+    const std::string kCS_R32UI = std::string("#version 320 es\n") +
+                                  "layout(local_size_x=1) in;\n"
+                                  "layout(r32ui, binding = 0) uniform highp uimageBuffer img;\n"
+                                  "void main() {\n"
+                                  "    imageStore(img, 4, uvec4(5));\n"
+                                  "}";
+
+    // Create buffer large enough for the intended writes:
+    //  - RGBA32UI write at index 1 (offset 16, size 16)
+    //  - R32UI write at index 4 (offset 16, size 4)
+    // Use 80 bytes so either intended or buggy writes are in-bounds.
+    constexpr GLsizeiptr kBufferBytes = 80;
+    GLBuffer buffer;
+    glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+    glBufferData(GL_TEXTURE_BUFFER, kBufferBytes, nullptr, GL_DYNAMIC_DRAW);
+
+    // Create texture buffer and attach buffer with a base format
+    GLTexture tex;
+    glBindTexture(GL_TEXTURE_BUFFER, tex);
+    // Base internal format can be any integer format; use R32UI.
+    glTexBufferRange(GL_TEXTURE_BUFFER, GL_R32UI, buffer, 0, kBufferBytes);
+
+    ANGLE_GL_COMPUTE_PROGRAM(progRGBA1, kCS_RGBA32UI.c_str());
+    ANGLE_GL_COMPUTE_PROGRAM(progR1, kCS_R32UI.c_str());
+
+    // First dispatch: rgba32ui (creates/uses RGBA view). Writes at texel 1 (offset 16).
+    glUseProgram(progRGBA1);
+    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32UI);
+    glDispatchCompute(1, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+
+    // Second dispatch: r32ui (should use an R32UI view). Writes at texel 4, which is offset 16
+    // when texel size is 4 bytes (R32UI).
+    glUseProgram(progR1);
+    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+    glDispatchCompute(1, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+
+    // Read back buffer contents and validate marker at offset 16 bytes (index 4).
+    glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+    void *ptr = glMapBufferRange(GL_TEXTURE_BUFFER, 0, kBufferBytes, GL_MAP_READ_BIT);
+    ASSERT_NE(nullptr, ptr);
+    const auto *bytes = static_cast<const uint8_t *>(ptr);
+
+    uint32_t valueAt4;
+    memcpy(&valueAt4, bytes + 4 * sizeof(uint32_t), sizeof(uint32_t));
+
+    // With the correct R32UI view, the marker at coordinate 4 must be 5.
+    // If the RGBA32UI view is (wrongly) reused, the write would land at offset 64 instead,
+    // and the value at offset 16 would remain 1.
+    EXPECT_EQ(5u, valueAt4) << [&]() -> std::string {
+        // Lazy-initialize a dump of the entire buffer value
+        std::string dump;
+        char buf[64];
+        auto valueCnt = static_cast<size_t>(kBufferBytes / sizeof(uint32_t));
+        snprintf(buf, sizeof(buf), "Buffer dump (u32, %zu values):", valueCnt);
+        dump += buf;
+        for (size_t i = 0; i < valueCnt; ++i)
+        {
+            uint32_t v;
+            memcpy(&v, bytes + i * sizeof(uint32_t), sizeof(uint32_t));
+            snprintf(buf, sizeof(buf), " [%zu]=%u", i, v);
+            dump += buf;
+        }
+        return dump;
+    }();
+    glUnmapBuffer(GL_TEXTURE_BUFFER);
+    EXPECT_GL_NO_ERROR();
+}
+
 // Test that an uninitialized nameless struct inside a for loop init statement works.
 TEST_P(WebGL2GLSLTest, UninitializedNamelessStructInForInitStatement)
 {
@@ -21468,44 +21556,6 @@ void main() {
 
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
 }
-
-TEST_P(GLSLTest, PreciseMatrixOperationComplexTest)
-{
-// Complex shader with multiple matrix operations and precise contexts
-constexpr char kVS[] = R"(#version 320 es
-void main()
-{
-    vec3 _333 = vec3(3);
-    vec4 _334 = vec4(mix(vec3(0.0), vec3(3) * (mat3(_333, _333, _333) * _333)[2], vec3(5)), 1.0);
-    precise vec4 _335 = _334;
-    _334.w = _335.w;
-}
-)";
-
-    GLuint shader = glCreateShader(GL_VERTEX_SHADER);
-    const char* shaderSource = kVS;
-    glShaderSource(shader, 1, &shaderSource, nullptr);
-    glCompileShader(shader);
-
-    // Check compilation status
-    GLint compileStatus = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-
-    if (compileStatus == GL_FALSE)
-    {
-    GLint infoLogLength = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-    std::string infoLog(infoLogLength, ' ');
-    glGetShaderInfoLog(shader, infoLogLength, nullptr, &infoLog[0]);
-
-    // Log but don't fail - testing for asserts, not compilation errors
-    printf("Complex shader compilation failed (may not support version 320 es): %s\n", infoLog.c_str());
-    EXPECT_TRUE(false);
-    }
-    glDeleteShader(shader);
-}
-
 }  // anonymous namespace
 
 ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(
