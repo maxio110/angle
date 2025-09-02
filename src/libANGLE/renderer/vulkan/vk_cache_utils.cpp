@@ -6384,6 +6384,9 @@ void DescriptorSetDescBuilder::updatePreCacheActiveTextures(
                 infoDesc.imageLayoutOrRange      = 0;
                 infoDesc.samplerOrBufferSerial   = 0;
                 infoDesc.imageSubresourceRange   = 0;
+                INFO() << "DescBuilder(SampledTexelBuffer) viewSerial="
+                       << imageViewSerial.viewSerial.getValue() << " subresourceRange="
+                       << infoDesc.imageSubresourceRange;
             }
             else
             {
@@ -6740,6 +6743,12 @@ angle::Result DescriptorSetDescBuilder::updateImages(
                 infoDesc.imageLayoutOrRange    = 0;
                 infoDesc.imageSubresourceRange = 0;
                 infoDesc.samplerOrBufferSerial = 0;
+
+                INFO() << "DescBuilder(StorageTexelBuffer) viewSerial="
+                       << textureVk->getBufferViewSerial().viewSerial.getValue()
+                       << " subresourceRange=" << infoDesc.imageSubresourceRange
+                       << " bufferView=0x" << std::hex << std::uppercase << view->getHandle()
+                       << std::nouppercase << std::dec;
 
                 mHandles[infoIndex].bufferView = view->getHandle();
             }

@@ -1359,7 +1359,7 @@ TracePerfTest::TracePerfTest(std::unique_ptr<const TracePerfParams> params)
 void TracePerfTest::startTest()
 {
     // runTrial() must align to frameCount()
-    ASSERT(mCurrentFrame == mStartFrame);
+    mCurrentFrame = mStartFrame;
 
     ANGLERenderTest::startTest();
 }

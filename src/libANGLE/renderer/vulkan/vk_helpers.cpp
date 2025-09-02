@@ -4663,6 +4663,9 @@ angle::Result DynamicDescriptorPool::getOrAllocateDescriptorSet(
     ASSERT(context->getFeatures().descriptorSetCache.enabled);
     bool success;
 
+    // Log the cache lookup to help diagnose descriptor set reuse behavior.
+    INFO() << "DSCache LOOKUP key=" << desc;
+
     // First scan the descriptorSet cache.
     DescriptorSetLRUListIterator listIterator;
     if (mDescriptorSetCache.getDescriptorSet(desc, &listIterator))
@@ -4672,8 +4675,11 @@ angle::Result DynamicDescriptorPool::getOrAllocateDescriptorSet(
         // Move it to the front of the LRU list.
         mLRUList.splice(mLRUList.begin(), mLRUList, listIterator);
         mCacheStats.hit();
+        INFO() << "DSCache HIT key=" << desc;
         return angle::Result::Continue;
     }
+
+    INFO() << "DSCache MISS key=" << desc;
 
     // Try to allocate from the existing pool (or recycle from garbage list)
     success = allocateFromExistingPool(context, descriptorSetLayout, descriptorSetOut);
@@ -4714,6 +4720,7 @@ angle::Result DynamicDescriptorPool::getOrAllocateDescriptorSet(
     // Add to the front of the LRU list and add list iterator to the cache
     mLRUList.push_front({sharedCacheKey, *descriptorSetOut});
     mDescriptorSetCache.insertDescriptorSet(desc, mLRUList.begin());
+    INFO() << "DSCache INSERT key=" << desc;
     mCacheStats.missAndIncrementSize();
 
     *newSharedCacheKeyOut = sharedCacheKey;
@@ -4745,6 +4752,7 @@ void DynamicDescriptorPool::releaseCachedDescriptorSet(Renderer *renderer,
     // Remove from the cache hash map. Note that we can't delete it until refcount goes to 0
     if (mDescriptorSetCache.eraseDescriptorSet(desc, &listIter))
     {
+        INFO() << "DSCache RELEASE key=" << desc;
         DescriptorSetPointer descriptorSet = std::move(listIter->descriptorSet);
         mCacheStats.decrementSize();
         mLRUList.erase(listIter);
@@ -4765,6 +4773,7 @@ void DynamicDescriptorPool::destroyCachedDescriptorSet(Renderer *renderer,
     // Remove from the cache hash map. Note that we can't delete it until refcount goes to 0
     if (mDescriptorSetCache.eraseDescriptorSet(desc, &listIter))
     {
+        INFO() << "DSCache DESTROY key=" << desc;
         DescriptorSetPointer descriptorSet = std::move(listIter->descriptorSet);
         mCacheStats.decrementSize();
         mLRUList.erase(listIter);
