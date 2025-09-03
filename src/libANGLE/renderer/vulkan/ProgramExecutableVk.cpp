@@ -1951,8 +1951,6 @@ angle::Result ProgramExecutableVk::getOrAllocateDescriptorSet(
 
     if (renderer->getFeatures().descriptorSetCache.enabled)
     {
-        INFO() << "DSCache REQUEST setIndex=" << static_cast<int>(setIndex)
-               << " desc=" << descriptorSetDesc.getDesc();
         ANGLE_TRY(mDynamicDescriptorPools[setIndex]->getOrAllocateDescriptorSet(
             context, currentFrame, descriptorSetDesc.getDesc(), *mDescriptorSetLayouts[setIndex],
             &mDescriptorSets[setIndex], newSharedCacheKeyOut));
@@ -1962,16 +1960,9 @@ angle::Result ProgramExecutableVk::getOrAllocateDescriptorSet(
         {
             ASSERT((*newSharedCacheKeyOut)->valid());
             // Cache miss. A new cache entry has been created.
-            INFO() << "DSCache UPDATE_WRITE setIndex=" << static_cast<int>(setIndex)
-                   << " desc=" << descriptorSetDesc.getDesc();
             updateBuilder->updateWriteDescriptorSet(renderer, descriptorSetDesc,
                                                     writeDescriptorDescs,
                                                     mDescriptorSets[setIndex]->getDescriptorSet());
-        }
-        else
-        {
-            INFO() << "DSCache REUSE (no update) setIndex=" << static_cast<int>(setIndex)
-                   << " desc=" << descriptorSetDesc.getDesc();
         }
     }
     else

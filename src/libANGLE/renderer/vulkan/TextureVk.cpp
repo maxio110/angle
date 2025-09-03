@@ -3983,72 +3983,33 @@ angle::Result TextureVk::getBufferView(vk::ErrorContext *context,
     // Use the format specified by glTexBuffer if no format specified by the shader.
     if (imageUniformFormat == nullptr)
     {
-        INFO() << "getBufferView: no shader format; using base level format";
         imageUniformFormat = &getBaseLevelFormat(renderer);
     }
 
     if (isImage)
     {
-        const vk::Format *origFormat = imageUniformFormat;
         imageUniformFormat = AdjustStorageViewFormatPerWorkarounds(renderer, imageUniformFormat,
                                                                    getRequiredImageAccess());
-        if (imageUniformFormat != origFormat)
-        {
-            INFO() << "getBufferView: adjusted storage view format per workarounds from VkFormat="
-                   << static_cast<uint32_t>(origFormat->getActualBufferVkFormat(renderer, false))
-                   << " to VkFormat="
-                   << static_cast<uint32_t>(imageUniformFormat->getActualBufferVkFormat(renderer,
-                                                                                        false));
-        }
     }
 
     const vk::BufferHelper *buffer = &vk::GetImpl(mState.getBuffer().get())->getBuffer();
 
     if (NeedsRGBAEmulation(renderer, imageUniformFormat->getIntendedFormatID()))
     {
-        const angle::FormatID srcID = imageUniformFormat->getIntendedFormatID();
-        INFO() << "getBufferView: NeedsRGBAEmulation srcFormatID=" << static_cast<int>(srcID);
-        buffer = getRGBAConversionBufferHelper(renderer, srcID);
-        const angle::FormatID dstID = GetRGBAEmulationDstFormat(srcID);
-        imageUniformFormat         = &renderer->getFormat(dstID);
-        INFO() << "getBufferView: using RGBA emulation dstFormatID=" << static_cast<int>(dstID)
-               << ", VkFormat="
-               << static_cast<uint32_t>(imageUniformFormat->getActualBufferVkFormat(renderer,
-                                                                                    false));
+        buffer = getRGBAConversionBufferHelper(renderer, imageUniformFormat->getIntendedFormatID());
+        imageUniformFormat = &renderer->getFormat(
+            GetRGBAEmulationDstFormat(imageUniformFormat->getIntendedFormatID()));
     }
 
     if (samplerBinding)
     {
-        const vk::Format *before = imageUniformFormat;
-        imageUniformFormat        =
+        imageUniformFormat =
             AdjustViewFormatForSampler(renderer, imageUniformFormat, samplerBinding->format);
-        if (imageUniformFormat != before)
-        {
-            INFO() << "getBufferView: adjusted view format for sampler from VkFormat="
-                   << static_cast<uint32_t>(before->getActualBufferVkFormat(renderer, false))
-                   << " to VkFormat="
-                   << static_cast<uint32_t>(imageUniformFormat->getActualBufferVkFormat(renderer,
-                                                                                        false));
-        }
     }
 
     // Create a view for the required format.
-    VkFormat finalVkFormat = imageUniformFormat->getActualBufferVkFormat(renderer, false);
-    INFO() << "getBufferView: requesting BufferView for VkFormat="
-           << static_cast<uint32_t>(finalVkFormat) << ", bufferOffset=" << buffer->getOffset();
-
-    angle::Result result =
-        mBufferViews.getView(context, *buffer, buffer->getOffset(), *imageUniformFormat, viewOut);
-
-    if (result == angle::Result::Continue)
-    {
-        INFO() << "getBufferView: acquired view handle=0x" << std::hex << std::uppercase
-               << (*viewOut)->getHandle() << std::nouppercase << std::dec
-               << ", viewSerial=" << mBufferViews.getSerial().viewSerial.getValue()
-               << ", finalVkFormat=" << static_cast<uint32_t>(finalVkFormat);
-    }
-
-    return result;
+    return mBufferViews.getView(context, *buffer, buffer->getOffset(), *imageUniformFormat,
+                                viewOut);
 }
 
 angle::Result TextureVk::initImage(ContextVk *contextVk,
