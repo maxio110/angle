@@ -248,6 +248,7 @@ vars = {
   'checkout_angle_restricted_trace_fishdom': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_five_nights_at_freddys': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_football_league_2025': 'checkout_angle_restricted_traces',
+  'checkout_angle_restricted_trace_fortnite_v36': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_free_fire': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_free_fire_max': 'checkout_angle_restricted_traces',
   'checkout_angle_restricted_trace_frost_and_flame': 'checkout_angle_restricted_traces',
@@ -2305,6 +2306,16 @@ deps = {
       ],
       'dep_type': 'cipd',
       'condition': 'checkout_angle_restricted_trace_football_league_2025',
+  },
+  'src/tests/restricted_traces/fortnite_v36': {
+      'packages': [
+        {
+            'package': 'angle/traces/fortnite_v36',
+            'version': 'version:1',
+        },
+      ],
+      'dep_type': 'cipd',
+      'condition': 'checkout_angle_restricted_trace_fortnite_v36',
   },
   'src/tests/restricted_traces/free_fire': {
       'packages': [
