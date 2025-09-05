@@ -6392,6 +6392,7 @@ void Renderer::initFeatures(const vk::ExtensionNameList &deviceExtensionNames,
     // Disable the feature on Windows Intel because some shaders using 16-bit floats crash
     ANGLE_FEATURE_CONDITION(&mFeatures, convertLowpAndMediumpFloatUniformsTo16Bits,
                             m16BitStorageFeatures.uniformAndStorageBuffer16BitAccess == VK_TRUE &&
+                                mShaderFloat16Int8Features.shaderFloat16 == VK_TRUE &&
                                 !(IsWindows() && isIntel));
 
     ANGLE_FEATURE_CONDITION(
