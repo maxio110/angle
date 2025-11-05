@@ -42,6 +42,10 @@ class ReadOnlyFeedbackLoopTest : public ANGLETest<>
 class ReadOnlyFeedbackLoopTestES31 : public ReadOnlyFeedbackLoopTest
 {};
 
+// Vulkan-only variant used for tests that exercise Vulkan-specific synchronization behavior.
+class ReadOnlyFeedbackLoopVulkanOnlyTest : public ReadOnlyFeedbackLoopTest
+{};
+
 // Fill out a depth texture to specific values and use it both as a sampler and a depth texture
 // with depth write disabled. This is to test a "read-only feedback loop" that needs to be
 // supported to match industry standard.
@@ -147,6 +151,87 @@ TEST_P(ReadOnlyFeedbackLoopTest, DepthFeedbackLoop)
     GLint depthColorValue = (depthValue)*128 + 128;
     EXPECT_NEAR(depthColorValue, angle::ReadColor(width / 2, height / 2).R, 1);
     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
+}
+
+// After writing depth, immediately establish a read-only feedback loop that samples the same
+// depth attachment while depth writes are disabled. Historically, ANGLE would emit two image
+// barriers for the depth image right after ending the first render pass (to READ_ONLY and then to
+// LOCAL_READ), with the second missing srcAccess. This test reproduces that sequence.
+TEST_P(ReadOnlyFeedbackLoopVulkanOnlyTest, DepthWriteThenReadOnlyFeedbackLoop)
+{
+    ANGLE_SKIP_TEST_IF(!IsVulkan());
+    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_ANGLE_read_only_depth_stencil_feedback_loops"));
+
+    const GLuint width  = getWindowWidth();
+    const GLuint height = getWindowHeight();
+
+    // Create color/depth textures and FBO
+    GLTexture colorTex;
+    GLTexture depthTex;
+    GLFramebuffer fbo;
+
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D, depthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT,
+                 GL_UNSIGNED_INT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
+
+    // First pass: write depth via a draw (Late Fragment Tests) to ensure a prior DS write.
+    ANGLE_GL_PROGRAM(drawColor, essl1_shaders::vs::Simple(), essl1_shaders::fs::Blue());
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_ALWAYS);
+    glClearDepthf(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    drawQuad(drawColor, essl1_shaders::PositionAttrib(), 0.2f);
+    ASSERT_GL_NO_ERROR();
+
+    // Second pass setup: establish read-only depth feedback loop by sampling the depth texture
+    // while it remains bound as depth attachment and depth writes are disabled.
+    ANGLE_GL_PROGRAM(sampleDepth, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
+
+    glDepthMask(GL_FALSE);
+    glDisable(GL_DEPTH_TEST);
+
+    // Bind the same depth texture for sampling.
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, depthTex);
+
+    // Draw while sampling from depth. This previously triggered the pair of image barriers (to
+    // READ_ONLY and then to LOCAL_READ) right after ending the first render pass.
+    drawQuad(sampleDepth, essl1_shaders::PositionAttrib(), 0.5f, 1.0f);
+    ASSERT_GL_NO_ERROR();
+
+    // Do a trivial blit to break the render pass and ensure all work is flushed.
+    GLTexture colorTexDst;
+    glBindTexture(GL_TEXTURE_2D, colorTexDst);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLFramebuffer readFbo;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+
+    GLFramebuffer drawFbo;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexDst, 0);
+
+    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_READ_FRAMEBUFFER);
+    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_DRAW_FRAMEBUFFER);
+
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    ASSERT_GL_NO_ERROR();
 }
 
 // Tests that we can support a feedback loop between a depth textures and the depth buffer.
@@ -1038,3 +1123,6 @@ ANGLE_INSTANTIATE_TEST_ES3(ReadOnlyFeedbackLoopTest);
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ReadOnlyFeedbackLoopTestES31);
 ANGLE_INSTANTIATE_TEST_ES31(ReadOnlyFeedbackLoopTestES31);
+
+// Instantiate the Vulkan-only suite for the Vulkan-specific hazard reproduction test.
+ANGLE_INSTANTIATE_TEST(ReadOnlyFeedbackLoopVulkanOnlyTest, ES3_VULKAN(), ES3_VULKAN_SWIFTSHADER());

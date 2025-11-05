@@ -2426,6 +2426,12 @@ class ImageHelper final : public Resource, public angle::Subject
     bool hasAnyRenderPassUsageFlags() const;
     bool usedByCurrentRenderPassAsAttachmentAndSampler(RenderPassUsage textureSamplerUsage) const;
 
+    // Hint that the next barrier should treat the previous access as a depth/stencil attachment
+    // write (e.g. after a render pass that wrote or cleared depth/stencil) without changing the
+    // recorded oldLayout. This augments the barrier's srcAccess/srcStage to cover depth/stencil
+    // writes and avoids WAW hazards.
+    void forceNextBarrierFromDepthStencilWrite();
+
     static void Copy(Renderer *renderer,
                      ImageHelper *srcImage,
                      ImageHelper *dstImage,
@@ -3348,6 +3354,11 @@ class ImageHelper final : public Resource, public angle::Subject
     // different levels or layers of the image, such as data uploads.
     // See comment on kMaxParallelLayerWrites.
     gl::TexLevelArray<ImageLayerWriteMask> mSubresourcesWrittenSinceBarrier;
+
+    // If set, the next barrier will include DEPTH_STENCIL_ATTACHMENT_WRITE in srcAccess and
+    // Early/Late Fragment Tests in srcStage (pipeline barrier path) while preserving the current
+    // layout as oldLayout.
+    bool mForceSrcFromDSWrite = false;
 };
 
 ANGLE_INLINE bool RenderPassCommandBufferHelper::usesImage(const ImageHelper &image) const
