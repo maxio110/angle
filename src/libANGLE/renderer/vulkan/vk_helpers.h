@@ -754,6 +754,24 @@ class PipelineBarrier : angle::NonCopyable
             memoryBarrier.dstAccessMask = mMemoryBarrierDstAccess;
             memoryBarrierCount++;
         }
+
+#if defined(ANGLE_ENABLE_ASSERTS)
+        for (const VkImageMemoryBarrier &imgBarrier : mImageMemoryBarriers)
+        {
+            const bool isDS = (imgBarrier.subresourceRange.aspectMask &
+                               (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0;
+            if (isDS)
+            {
+                INFO() << "Executing image barrier: srcStages=0x" << std::hex << mSrcStageMask
+                       << std::dec << " dstStages=0x" << std::hex << mDstStageMask << std::dec
+                       << " srcAccess=0x" << std::hex << imgBarrier.srcAccessMask << std::dec
+                       << " dstAccess=0x" << std::hex << imgBarrier.dstAccessMask << std::dec
+                       << " oldLayout=" << imgBarrier.oldLayout
+                       << " newLayout=" << imgBarrier.newLayout
+                       << " image=0x" << std::hex << imgBarrier.image << std::dec;
+            }
+        }
+#endif
         primary->pipelineBarrier(
             mSrcStageMask, mDstStageMask, 0, memoryBarrierCount, &memoryBarrier, 0, nullptr,
             static_cast<uint32_t>(mImageMemoryBarriers.size()), mImageMemoryBarriers.data());

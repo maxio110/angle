@@ -11,6 +11,7 @@
 #endif
 
 #include "libANGLE/renderer/vulkan/vk_helpers.h"
+#include "common/backtrace_utils.h"
 
 #include "common/aligned_memory.h"
 #include "common/utilities.h"
@@ -1141,6 +1142,30 @@ void CommandBufferHelperCommon::executeBarriers(Renderer *renderer,
                                                 CommandsState *commandsState,
                                                 PrimaryCommandBuffer *primaryCommands)
 {
+    // Optional diagnostics: log a lightweight backtrace to understand what triggers barrier flushes.
+#if defined(ANGLE_ENABLE_ASSERTS)
+    {
+        INFO() << "[BarrierFlush] CommandBufferHelperCommon::executeBarriers triggered.";
+        angle::BacktraceInfo bt = angle::getBacktraceInfo();
+        const auto &symbols      = bt.getStackSymbols();
+        if (!symbols.empty())
+        {
+            for (const std::string &sym : symbols)
+            {
+                INFO() << "  " << sym;
+            }
+        }
+        else
+        {
+            const auto &addrs = bt.getStackAddresses();
+            for (void *addr : addrs)
+            {
+                INFO() << "  addr=" << addr;
+            }
+        }
+    }
+#endif  // defined(ANGLE_ENABLE_ASSERTS)
+
     // Add ANI semaphore to the command submission.
     if (mAcquireNextImageSemaphore.valid())
     {
@@ -1895,6 +1920,12 @@ void RenderPassCommandBufferHelper::finalizeDepthStencilImageLayout(Context *con
         // changing the recorded oldLayout.
         if (hasDepthWriteOrClear() || hasStencilWriteOrClear())
         {
+            INFO() << "RP finalize DS: wrote depth?=" << hasDepthWriteOrClear()
+                   << " wrote stencil?=" << hasStencilWriteOrClear()
+                   << " curAccess=" << static_cast<int>(depthStencilImage->getCurrentImageAccess())
+                   << " nextAccess=" << static_cast<int>(imageAccess)
+                   << " barrierType=" << (barrierType == BarrierType::Event ? "Event" : "Pipeline")
+                   << " image=0x" << std::hex << depthStencilImage->getImage().getHandle() << std::dec;
             depthStencilImage->forceNextBarrierFromDepthStencilWrite();
         }
 
@@ -7486,6 +7517,15 @@ void ImageHelper::updateLayoutAndBarrier(Context *context,
                 {
                     srcStageMask |= kAllDepthStencilPipelineStageFlags;
                 }
+                INFO() << "DS barrier (updateLayoutAndBarrier): PIPELINE srcAccess=0x"
+                       << std::hex << imageMemoryBarrier.srcAccessMask << std::dec
+                       << " srcStages=0x" << std::hex << srcStageMask << std::dec
+                       << " oldLayout=" << imageMemoryBarrier.oldLayout
+                       << " newLayout=" << imageMemoryBarrier.newLayout
+                       << " dstAccess=0x" << std::hex << imageMemoryBarrier.dstAccessMask
+                       << std::dec << " dstStages=0x" << std::hex << dstStageMask << std::dec
+                       << " image=0x" << std::hex << mImage.getHandle() << std::dec;
+
             }
 
             if (transitionFrom.layout == transitionTo.layout && isNewAccessShaderReadOnly)
