@@ -610,6 +610,7 @@ if (angle_standalone || build_with_chromium ||
           "$angle_root/src/tests/test_utils/runner/TestSuite.cpp",
           "$angle_root/src/tests/test_utils/runner/TestSuite.h",
         ]
+        public_deps += [ "$angle_root/util:angle_simple_blob_cache" ]
       }
 
       if (angle_has_histograms) {

@@ -14,6 +14,7 @@
 #include "trace_fixture.h"
 
 #include "angle_trace_gl.h"
+#include "../simple_blob_cache.h"
 
 #include <filesystem>
 #include <string>
@@ -404,6 +405,7 @@ void InitializeReplay(const char *binaryDataFileName,
         gFramebufferMapPerContext[i] = AllocateZeroedValues<GLuint>(maxFramebuffer);
     }
 
+    InitSimpleBlobCache();
     // Pull in requested extension list from file created by ANGLEPerfTest
     gRequestedExtensions = LoadRequestedExtensions();
 }

@@ -14,9 +14,13 @@
 #include "ANGLEPerfTestArgs.h"
 #include <string.h>
 #include <sstream>
+#include <iostream>
+#include <filesystem>
 
 #include "common/debug.h"
+#include "common/system_utils.h"
 #include "util/test_utils.h"
+#include "util/simple_blob_cache.h"
 
 #if defined(ANGLE_PLATFORM_ANDROID)
 #    include "util/android/AndroidWindow.h"
@@ -63,6 +67,7 @@ bool gIncludeInactiveResources     = false;
 bool gTrackGPUTime                 = false;
 bool gAddSwapIntoGPUTime           = false;
 bool gAddSwapIntoFrameWallTime     = false;
+const char *gBlobCacheDir          = nullptr;
 
 namespace
 {
@@ -100,6 +105,7 @@ bool TraceTestArg(int *argc, char **argv, int argIndex)
            ParseIntArg("--screenshot-frame", argc, argv, argIndex, &gScreenshotFrame) ||
            ParseIntArg("--fps-limit", argc, argv, argIndex, &gFpsLimit) ||
            ParseFlag("--fps-limit-uses-busy-wait", argc, argv, argIndex, &gFpsLimitUsesBusyWait) ||
+           ParseCStringArg("--blobcache-dir", argc, argv, argIndex, &gBlobCacheDir) ||
            ParseCStringArgWithHandling("--render-test-output-dir", argc, argv, argIndex,
                                        &gRenderTestOutputDir, ArgHandling::Preserve) ||
            ParseCStringArg("--screenshot-dir", argc, argv, argIndex, &gScreenshotDir) ||
@@ -198,6 +204,29 @@ void ANGLEProcessTraceTestArgs(int *argc, char **argv)
     {
         gTestTrials       = 1;
         gTrialTimeSeconds = 600;
+    }
+
+    // Configure the optional simple blob cache file from a directory argument.
+    if (gBlobCacheDir && gBlobCacheDir[0] != '\0')
+    {
+        std::filesystem::path blobDir(gBlobCacheDir);
+        if (!std::filesystem::exists(blobDir))
+        {
+            std::cerr << "[BlobCache] Path does not exist: " << blobDir
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        if (!std::filesystem::is_directory(blobDir))
+        {
+            std::cerr << "[BlobCache] Path is not a directory: " << blobDir
+                      << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+
+        std::filesystem::path blobFile = blobDir / "angle_simple_blob_cache.abin";
+        std::string pathString         = blobFile.lexically_normal().string();
+        std::cout << "[BlobCache] --blobcache-dir parsed: '" << pathString << "'" << std::endl;
+        SetSimpleBlobCachePath(pathString.c_str());
     }
 
     if (kStandaloneBenchmark)

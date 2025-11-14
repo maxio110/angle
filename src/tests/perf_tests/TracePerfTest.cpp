@@ -34,6 +34,7 @@
 #include <rapidjson/istreamwrapper.h>
 
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <sstream>
@@ -56,6 +57,9 @@ using namespace egl_platform;
 
 namespace
 {
+// Manual timing for first visible frame (no trace injection).
+static std::chrono::steady_clock::time_point gTraceStartTime;
+static bool gFirstSwapLogged = false;
 
 class TracePerfTest : public ANGLERenderTest
 {
@@ -1387,6 +1391,7 @@ std::string FindTraceGzPath(const std::string &traceName)
 void TracePerfTest::initializeBenchmark()
 {
     const TraceInfo &traceInfo = mParams->traceInfo;
+    gTraceStartTime            = std::chrono::steady_clock::now();
 
     char testDataDir[kMaxPath] = {};
     if (!FindTraceTestDataPath(traceInfo.name, testDataDir, kMaxPath))
@@ -1617,6 +1622,14 @@ void TracePerfTest::initializeBenchmark()
     if (gRetraceMode)
     {
         getGLWindow()->swap();
+        if (!gFirstSwapLogged)
+        {
+            auto now = std::chrono::steady_clock::now();
+            auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(now - gTraceStartTime)
+                          .count();
+            std::cout << "[Timing] FirstPresent ms (harness): " << ms << std::endl;
+            gFirstSwapLogged = true;
+        }
     }
 }
 
@@ -1798,6 +1811,15 @@ void TracePerfTest::drawBenchmark()
                     saveScreenshotIfEnabled(ScreenshotType::kGrid);
                 }
                 getGLWindow()->swap();
+                if (!gFirstSwapLogged)
+                {
+                    auto now = std::chrono::steady_clock::now();
+                    auto ms =
+                        std::chrono::duration_cast<std::chrono::milliseconds>(now - gTraceStartTime)
+                            .count();
+                    std::cout << "[Timing] FirstPresent ms (harness): " << ms << std::endl;
+                    gFirstSwapLogged = true;
+                }
                 mOffscreenFrameCount = 0;
             }
             else
@@ -1847,6 +1869,14 @@ void TracePerfTest::drawBenchmark()
         bindFramebuffer(GL_FRAMEBUFFER, 0);
         saveScreenshotIfEnabled(ScreenshotType::kFrame);
         getGLWindow()->swap();
+        if (!gFirstSwapLogged)
+        {
+            auto now = std::chrono::steady_clock::now();
+            auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(now - gTraceStartTime)
+                          .count();
+            std::cout << "[Timing] FirstPresent ms (harness): " << ms << std::endl;
+            gFirstSwapLogged = true;
+        }
     }
 
     if (gAddSwapIntoFrameWallTime)

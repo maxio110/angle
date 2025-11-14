@@ -75,6 +75,7 @@ angle_test("test_utils_unittest_helper") {
     "test_utils/angle_test_instantiate.h",
     "test_utils/runner/TestSuite_unittest.cpp",
   ]
+  deps = [ "$angle_root/util:angle_simple_blob_cache" ]
 }
 
 test_expectations_sources = [
@@ -607,6 +608,7 @@ template("angle_perftests_common") {
       "$angle_root/src/tests:angle_test_expectations",
       "$angle_root/third_party/rapidjson",
       "${invoker.test_utils}",
+      "$angle_root/util:angle_simple_blob_cache",
     ]
     public_configs += [
       ":angle_maybe_has_histograms",

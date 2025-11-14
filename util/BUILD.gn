@@ -227,6 +227,7 @@ angle_source_set("angle_trace_fixture") {
     "$angle_root:angle_capture_common",
     "$angle_root:includes",
   ]
+  public_deps += [ ":angle_simple_blob_cache" ]
   if (is_ios) {
     # shared libraries are hidden inside ios_framework_bundle, but we include headers from them
     check_includes = false
@@ -299,6 +300,21 @@ if (angle_has_frame_capture) {
     ]
     defines = [ "ANGLE_REPLAY_IMPLEMENTATION" ]
   }
+}
+
+# Simple blob cache helper (test-only), reusable by traces and tests
+angle_source_set("angle_simple_blob_cache") {
+  testonly = true
+  sources = [
+    "simple_blob_cache.cpp",
+    "simple_blob_cache.h",
+  ]
+  # Use trace loader for eglGetProcAddress/glBlobCacheCallbacksANGLE resolution.
+  # Keep it private to avoid exporting no_gl_prototypes to dependents.
+  deps = [ ":angle_trace_loader" ]
+  configs += [ ":angle_trace_loader_config" ]
+  # Expose util include path so tests can include "util/simple_blob_cache.h".
+  public_configs = [ ":angle_util_config" ]
 }
 
 config("angle_util_config") {
