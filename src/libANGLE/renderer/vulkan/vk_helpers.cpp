@@ -1914,6 +1914,21 @@ void RenderPassCommandBufferHelper::finalizeDepthStencilImageLayout(Context *con
         const angle::Format &format = depthStencilImage->getActualFormat();
         ASSERT(format.hasDepthOrStencilBits());
         VkImageAspectFlags aspectFlags = GetDepthStencilAspectFlags(format);
+
+        // If the render pass performed any depth or stencil writes (including clears), augment the
+        // next barrier to treat the previous access as a depth/stencil attachment write without
+        // changing the recorded oldLayout.
+        if (hasDepthWriteOrClear() || hasStencilWriteOrClear())
+        {
+            INFO() << "RP finalize DS: wrote depth?=" << hasDepthWriteOrClear()
+                   << " wrote stencil?=" << hasStencilWriteOrClear()
+                   << " curAccess=" << static_cast<int>(depthStencilImage->getCurrentImageAccess())
+                   << " nextAccess=" << static_cast<int>(imageAccess)
+                   << " barrierType=" << (barrierType == BarrierType::Event ? "Event" : "Pipeline")
+                   << " image=0x" << std::hex << depthStencilImage->getImage().getHandle() << std::dec;
+            depthStencilImage->forceNextBarrierFromDepthStencilWrite();
+        }
+
         updateImageLayoutAndBarrier(context, depthStencilImage, aspectFlags, imageAccess,
                                     barrierType);
     }
@@ -5477,6 +5492,7 @@ void ImageHelper::resetCachedProperties()
     mYcbcrConversionDesc.reset();
     mCurrentSingleClearValue.reset();
     mRenderPassUsageFlags.reset();
+    mForceSrcFromDSWrite = false;
 
     setEntireContentUndefined();
 }
@@ -6870,6 +6886,11 @@ bool ImageHelper::usedByCurrentRenderPassAsAttachmentAndSampler(
            mRenderPassUsageFlags[textureSamplerUsage];
 }
 
+void ImageHelper::forceNextBarrierFromDepthStencilWrite()
+{
+    mForceSrcFromDSWrite = true;
+}
+
 bool ImageHelper::isReadBarrierNecessary(Renderer *renderer, ImageAccess newAccess) const
 {
     // If transitioning to a different layout, we need always need a barrier.
@@ -7148,6 +7169,12 @@ void ImageHelper::barrierImpl(Renderer *renderer,
         // VUID-vkCmdWaitEvents-srcStageMask-01158 requires they must match.
         VkPipelineStageFlags srcStageMask =
             renderer->getPipelineStageMask(mCurrentEvent.getEventStage());
+        if (mForceSrcFromDSWrite)
+        {
+            // Strengthen memory dependency to include depth/stencil attachment writes.
+            imageMemoryBarrier.srcAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            // Do not modify srcStageMask here; it must match the stage used in SetEvent.
+        }
         commandBuffer->imageWaitEvent(mCurrentEvent.getEvent().getHandle(), srcStageMask,
                                       dstStageMask, imageMemoryBarrier);
         eventCollector->emplace_back(std::move(mCurrentEvent));
@@ -7161,6 +7188,11 @@ void ImageHelper::barrierImpl(Renderer *renderer,
             srcStageMask |= mCurrentShaderReadStageMask;
             mCurrentShaderReadStageMask  = 0;
             mLastNonShaderReadOnlyAccess = ImageAccess::Undefined;
+        }
+        if (mForceSrcFromDSWrite)
+        {
+            imageMemoryBarrier.srcAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            srcStageMask |= kAllDepthStencilPipelineStageFlags;
         }
         commandBuffer->imageBarrier(srcStageMask, dstStageMask, imageMemoryBarrier);
     }
@@ -7475,13 +7507,25 @@ void ImageHelper::updateLayoutAndBarrier(Context *context,
                                          context->getDeviceQueueIndex().familyIndex(),
                                          &imageMemoryBarrier);
 
-            const bool isDSAspect =
-                (aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0;
-            if (isDSAspect)
+            // If the previous render pass wrote depth/stencil, strengthen the barrier's source
+            // side to include depth/stencil writes while preserving oldLayout. This removes WAW
+            // hazards seen immediately after vkCmdEndRenderingKHR.
+            if (mForceSrcFromDSWrite)
             {
-                INFO() << "VK: DS transition: oldLayout=" << imageMemoryBarrier.oldLayout
-                       << " -> newLayout=" << imageMemoryBarrier.newLayout << " barrierType="
-                       << (barrierType == BarrierType::Event ? "Event" : "Pipeline");
+                imageMemoryBarrier.srcAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                if (barrierType == BarrierType::Pipeline)
+                {
+                    srcStageMask |= kAllDepthStencilPipelineStageFlags;
+                }
+                INFO() << "DS barrier (updateLayoutAndBarrier): PIPELINE srcAccess=0x"
+                       << std::hex << imageMemoryBarrier.srcAccessMask << std::dec
+                       << " srcStages=0x" << std::hex << srcStageMask << std::dec
+                       << " oldLayout=" << imageMemoryBarrier.oldLayout
+                       << " newLayout=" << imageMemoryBarrier.newLayout
+                       << " dstAccess=0x" << std::hex << imageMemoryBarrier.dstAccessMask
+                       << std::dec << " dstStages=0x" << std::hex << dstStageMask << std::dec
+                       << " image=0x" << std::hex << mImage.getHandle() << std::dec;
+
             }
 
             if (transitionFrom.layout == transitionTo.layout && isNewAccessShaderReadOnly)
@@ -7543,6 +7587,16 @@ void ImageHelper::updateLayoutAndBarrier(Context *context,
             {
                 eventBarriers->addEventImageBarrier(renderer, mCurrentEvent, dstStageMask,
                                                     imageMemoryBarrier);
+                if (imageMemoryBarrier.srcAccessMask & VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                {
+                    INFO() << "DS barrier (updateLayoutAndBarrier): EVENT srcAccess=0x"
+                           << std::hex << imageMemoryBarrier.srcAccessMask << std::dec
+                           << " oldLayout=" << imageMemoryBarrier.oldLayout
+                           << " newLayout=" << imageMemoryBarrier.newLayout
+                           << " dstAccess=0x" << std::hex << imageMemoryBarrier.dstAccessMask
+                           << std::dec << " dstStages=0x" << std::hex << dstStageMask << std::dec
+                           << " image=0x" << std::hex << mImage.getHandle() << std::dec;
+                }
                 if (isNewAccessShaderReadOnly && !isCurrentAccessShaderReadOnly)
                 {
                     mLastNonShaderReadOnlyEvent = mCurrentEvent;
